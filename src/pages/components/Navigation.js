@@ -21,6 +21,7 @@ import { HamburgerIcon, CloseIcon } from '@chakra-ui/icons';
 import { signOut } from 'firebase/auth';
 import { useFirebase } from 'react-redux-firebase';
 import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 
 const Links = [];
 
@@ -39,6 +40,7 @@ const NavLink = ({ children }: { children: ReactNode }) => (
 );
 
 export default function Simple() {
+  const navigate = useNavigate();
   const firebase = useFirebase();
   const {  auth, profile } = useSelector(state => ({ auth: state.firebase.auth, profile: state.firebase.profile }));
   const { isOpen, onOpen, onClose } = useDisclosure();
