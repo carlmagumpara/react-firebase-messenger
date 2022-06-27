@@ -13,9 +13,12 @@ function App() {
   return (
     <div className="App">
       <Routes>
-        <Route path="/login" element={<Guest><Login /></Guest>}/>
-        <Route path="/register" element={<Guest><Register /></Guest>} />
-        <Route path="/conversations" element={<Auth><Conversations /></Auth>} />
+        <Route path="login" element={<Guest><Login /></Guest>}/>
+        <Route path="register" element={<Guest><Register /></Guest>} />
+        <Route path="conversations">
+          <Route path=":conversation_id" element={<Auth><Conversations /></Auth>} />
+          <Route path="" element={<Auth><Conversations /></Auth>} />
+        </Route>
         <Route path="/" element={<Auth></Auth>}/>
       </Routes>
     </div>

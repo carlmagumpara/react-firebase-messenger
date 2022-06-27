@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useState, useEffect } from 'react';
 import {
   IconButton,
   Avatar,
@@ -21,6 +21,7 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
+  Input
 } from '@chakra-ui/react';
 import {
   FiHome,
@@ -31,13 +32,15 @@ import {
   FiMenu,
   FiBell,
   FiChevronDown,
+  FiUser
 } from 'react-icons/fi';
 import { IconType } from 'react-icons';
 import { ReactText } from 'react';
-import { signOut } from 'firebase/auth';
-import { useFirebase } from 'react-redux-firebase';
+import { useFirebase, useFirestore } from 'react-redux-firebase';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+
+// import { query, collection, getDocs, orderBy, startAt, endAt, where } from 'firebase/firestore';
 
 const LinkItems = [
   { name: 'Home', icon: FiHome },
@@ -79,6 +82,78 @@ export default function SidebarWithHeader({
 }
 
 const SidebarContent = ({ onClose, ...rest }) => {
+  const navigate = useNavigate();
+  const firebase = useFirebase();
+  const firestore = useFirestore();
+  const { auth } = useSelector(state => ({ auth: state.firebase.auth }));
+  
+  const [search, setSearch] = useState('');
+  const [users, setUsers] = useState([]);
+  const [conversations, setConversations] = useState([]);
+
+  useEffect(() => {
+    getConversations();
+  }, []);
+
+  const getConversations = async () => {
+    try {
+      const q = await firestore.collection('conversations').where('participants', 'array-contains-any', [auth.uid]).get();
+
+      setConversations(q.docs.map(conversation => ({ id: conversation.id, ...conversation.data() })));
+    } catch(error) {
+
+    }
+  };
+
+  const searchUser = async term => {
+    try {
+      const q = await firestore.collection('profiles').orderBy('case_insensitive.first_name').startAt(term.toLowerCase()).endAt(term.toLowerCase() + '~').get();
+
+      setUsers(q.docs.map(user => ({ id: user.id, ...user.data() })));
+    } catch(error) {
+      console.log(error);
+    }
+  };
+
+  useEffect(() => {
+    if (search) {
+      searchUser(search);
+    }
+  }, [search]);
+
+  const createOrViewConversation = user => async () => {
+    try {
+      const conversationsRef = firestore.collection('conversations');
+      const messagesRef = firestore.collection('messages');
+
+      const conversation = await conversationsRef.add({
+        participants: [user.id, auth.uid],
+        started_by: auth.uid,
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      });
+
+      const message = await messagesRef.doc(conversation.id).collection('messages').add({
+        uid: auth.uid,
+        message: 'Hello', 
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      });
+
+
+      const message1 = await messagesRef.doc(conversation.id).collection('messages').add({
+        uid: auth.uid,
+        message: 'World', 
+        created_at: Date.now(),
+        updated_at: Date.now(),
+      });
+
+      navigate(`/conversations/${conversation.id}`);
+    } catch(error) {
+      console.log(error);
+    }
+  };
+
   return (
     <Box
       transition="3s ease"
@@ -88,28 +163,65 @@ const SidebarContent = ({ onClose, ...rest }) => {
       w={{ base: 'full', md: 60 }}
       pos="fixed"
       h="full"
-      {...rest}>
+      {...rest}
+    >
       <Flex h="20" alignItems="center" mx="8" justifyContent="space-between">
         <Text fontSize="2xl" fontFamily="monospace" fontWeight="bold">
           Chatify
         </Text>
         <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
       </Flex>
+      <Box p="3">
+        <Input 
+          value={search} 
+          onChange={event => setSearch(event.target.value)} 
+          placeholder="Search User..."
+        />
+      </Box>
+      {(search && users.length) ? (
+        <>
+          {users.map(user => (
+            <NavItem key={user.id} icon={FiUser} onClick={createOrViewConversation(user)}>
+              {user.first_name} {user.last_name}
+            </NavItem>
+          ))}
+        </>
+      ) : (
+        <>
+          {conversations.map(conversation => (
+            <NavItem 
+              key={conversation.id} 
+              icon={FiUser} 
+              onClick={() => navigate(`/conversations/${conversation.id}`)}
+            >
+              {conversation.id}
+            </NavItem>
+          ))}
 
-      
 
-      {LinkItems.map((link) => (
-        <NavItem key={link.name} icon={link.icon}>
-          {link.name}
-        </NavItem>
-      ))}
+{/*          {LinkItems.map((link) => (
+            <NavItem key={link.name} icon={link.icon}>
+              {link.name}
+            </NavItem>
+          ))}*/}
+        </>
+      )}
     </Box>
   );
 };
 
 const NavItem = ({ icon, children, ...rest }) => {
   return (
-    <Link href="#" style={{ textDecoration: 'none' }} _focus={{ boxShadow: 'none' }}>
+    <Link href="#" 
+      style={{ 
+        whiteSpace: "normal",
+        wordWrap: "break-word",
+        textDecoration: 'none' 
+      }} 
+      _focus={{ 
+        boxShadow: 'none' 
+      }}
+    >
       <Flex
         align="center"
         p="4"
@@ -153,7 +265,8 @@ const MobileNav = ({ onOpen, ...rest }) => {
       borderBottomWidth="1px"
       borderBottomColor={useColorModeValue('gray.200', 'gray.700')}
       justifyContent={{ base: 'space-between', md: 'flex-end' }}
-      {...rest}>
+      {...rest}
+    >
       <IconButton
         display={{ base: 'flex', md: 'none' }}
         onClick={onOpen}
@@ -161,15 +274,13 @@ const MobileNav = ({ onOpen, ...rest }) => {
         aria-label="open menu"
         icon={<FiMenu />}
       />
-
       <Text
         display={{ base: 'flex', md: 'none' }}
         fontSize="2xl"
         fontFamily="monospace"
         fontWeight="bold">
-        Logo
+        Chatify
       </Text>
-
       <HStack spacing={{ base: '0', md: '6' }}>
         <IconButton
           size="lg"

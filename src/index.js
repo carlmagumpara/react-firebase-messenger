@@ -17,6 +17,8 @@ import firebase from 'firebase/compat/app';
 import 'firebase/compat/auth';
 import 'firebase/compat/firestore';
 
+import { createFirestoreInstance } from 'redux-firestore';
+
 const fbConfig = {
   apiKey: "AIzaSyApAY8dy-c6whCW--qf_VJsuW8_-EeWL4o",
   authDomain: "react-firebase-messenger-f756a.firebaseapp.com",
@@ -36,7 +38,8 @@ const rrfConfig = {
 const rrfProps = {
   firebase,
   config: rrfConfig,
-  dispatch: store.dispatch
+  dispatch: store.dispatch,
+  createFirestoreInstance,
 };
 
 const root = ReactDOM.createRoot(document.getElementById('root'));

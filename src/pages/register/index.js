@@ -34,6 +34,10 @@ function Index() {
     {
       first_name: form.first_name,
       last_name: form.last_name,
+      case_insensitive: {
+        first_name: form.first_name.toLowerCase(),
+        last_name: form.last_name.toLowerCase(),
+      }
     });
   };
 
