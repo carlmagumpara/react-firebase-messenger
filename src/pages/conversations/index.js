@@ -7,11 +7,9 @@ import Conversation from './Conversation';
 function Index() {
   const props = useParams();
 
-  console.log(props);
-
   return (
     <SidebarWithHeader>
-      <Conversation key={props.conversation_id} {...props} />
+      {props.conversation_id ? <Conversation key={props.conversation_id} {...props} /> : null}
     </SidebarWithHeader>
   )
 }

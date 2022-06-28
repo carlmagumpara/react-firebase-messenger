@@ -19,7 +19,7 @@ function App() {
           <Route path=":conversation_id" element={<Auth><Conversations /></Auth>} />
           <Route path="" element={<Auth><Conversations /></Auth>} />
         </Route>
-        <Route path="/" element={<Auth></Auth>}/>
+        <Route path="/" element={<Auth><Guest></Guest></Auth>}/>
       </Routes>
     </div>
   );

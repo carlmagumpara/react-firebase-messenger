@@ -40,8 +40,6 @@ import { useFirebase, useFirestore } from 'react-redux-firebase';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-// import { query, collection, getDocs, orderBy, startAt, endAt, where } from 'firebase/firestore';
-
 const LinkItems = [
   { name: 'Home', icon: FiHome },
   { name: 'Trending', icon: FiTrendingUp },
@@ -91,17 +89,34 @@ const SidebarContent = ({ onClose, ...rest }) => {
   const [users, setUsers] = useState([]);
   const [conversations, setConversations] = useState([]);
 
+  const profilesRef = firestore.collection('profiles');
+  const conversationsRef = firestore.collection('conversations');
+  const messagesRef = firestore.collection('messages');
+  const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+
   useEffect(() => {
     getConversations();
   }, []);
 
   const getConversations = async () => {
     try {
-      const q = await firestore.collection('conversations').where('participants', 'array-contains-any', [auth.uid]).get();
+      const q = await conversationsRef.where('participants', 'array-contains-any', [auth.uid]).get();
 
-      setConversations(q.docs.map(conversation => ({ id: conversation.id, ...conversation.data() })));
+      const results = await Promise.all(q.docs.map(async conversation => {
+        const data = conversation.data();
+        const conversation_ = { id: conversation.id, ...data };
+        const profiles = await profilesRef.where(firestore.FieldPath.documentId(), 'in', data.participants).get();
+        conversation_.participants = profiles.docs.map(profile => ({
+          id: profile.id,
+          ...profile.data(),
+        }));
+
+        return conversation_;
+      }));
+
+      setConversations(results);
     } catch(error) {
-
+      console.log(error);
     }
   };
 
@@ -123,9 +138,6 @@ const SidebarContent = ({ onClose, ...rest }) => {
 
   const createOrViewConversation = user => async () => {
     try {
-      const conversationsRef = firestore.collection('conversations');
-      const messagesRef = firestore.collection('messages');
-
       const conversation = await conversationsRef.add({
         participants: [user.id, auth.uid],
         started_by: auth.uid,
@@ -133,21 +145,7 @@ const SidebarContent = ({ onClose, ...rest }) => {
         updated_at: Date.now(),
       });
 
-      const message = await messagesRef.doc(conversation.id).collection('messages').add({
-        uid: auth.uid,
-        message: 'Hello', 
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      });
-
-
-      const message1 = await messagesRef.doc(conversation.id).collection('messages').add({
-        uid: auth.uid,
-        message: 'World', 
-        created_at: Date.now(),
-        updated_at: Date.now(),
-      });
-
+      setSearch('');
       navigate(`/conversations/${conversation.id}`);
     } catch(error) {
       console.log(error);
@@ -194,11 +192,9 @@ const SidebarContent = ({ onClose, ...rest }) => {
               icon={FiUser} 
               onClick={() => navigate(`/conversations/${conversation.id}`)}
             >
-              {conversation.id}
+              {formatter.format(conversation.participants.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}
             </NavItem>
           ))}
-
-
 {/*          {LinkItems.map((link) => (
             <NavItem key={link.name} icon={link.icon}>
               {link.name}
@@ -321,7 +317,6 @@ const MobileNav = ({ onOpen, ...rest }) => {
               borderColor={useColorModeValue('gray.200', 'gray.700')}>
               <MenuItem>Profile</MenuItem>
               <MenuItem>Settings</MenuItem>
-              <MenuItem>Billing</MenuItem>
               <MenuDivider />
               <MenuItem onClick={() => firebase.logout()}>Sign out</MenuItem>
             </MenuList>
