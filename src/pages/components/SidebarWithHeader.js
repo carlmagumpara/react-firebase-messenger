@@ -21,7 +21,8 @@ import {
   MenuDivider,
   MenuItem,
   MenuList,
-  Input
+  Input,
+  Heading
 } from '@chakra-ui/react';
 import {
   FiHome,
@@ -72,7 +73,7 @@ export default function SidebarWithHeader({
       </Drawer>
       {/* mobilenav */}
       <MobileNav onOpen={onOpen} />
-      <Box ml={{ base: 0, md: 60 }} p="4">
+      <Box ml={{ base: 0, md: 60 }}>
         {children}
       </Box>
     </Box>
@@ -178,8 +179,9 @@ const SidebarContent = ({ onClose, ...rest }) => {
       </Box>
       {(search && users.length) ? (
         <>
+          <Heading size="md">Users</Heading>
           {users.map(user => (
-            <NavItem key={user.id} icon={FiUser} onClick={createOrViewConversation(user)}>
+            <NavItem key={user.id} icon={() => <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />} onClick={createOrViewConversation(user)}>
               {user.first_name} {user.last_name}
             </NavItem>
           ))}
@@ -189,7 +191,7 @@ const SidebarContent = ({ onClose, ...rest }) => {
           {conversations.map(conversation => (
             <NavItem 
               key={conversation.id} 
-              icon={FiUser} 
+              icon={() => <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />} 
               onClick={() => navigate(`/conversations/${conversation.id}`)}
             >
               {formatter.format(conversation.participants.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Center, Flex, Box, Spacer, Heading, Input, Button, InputGroup, InputLeftElement, InputRightElement } from '@chakra-ui/react';
+import { Avatar, Center, Flex, Box, Spacer, Heading, Input, Button, InputGroup, InputLeftElement, InputRightElement } from '@chakra-ui/react';
 import { useFirestore } from 'react-redux-firebase';
 import { useSelector } from 'react-redux';
 import { v4 } from 'uuid'; 
@@ -9,13 +9,32 @@ import { FiSend } from 'react-icons/fi';
 function Conversation({ conversation_id }) {
   const firestore = useFirestore();
   const { auth } = useSelector(state => ({ auth: state.firebase.auth }));
+  const profilesRef = firestore.collection('profiles');
+  const conversationsRef = firestore.collection('conversations');
   const messagesRef = firestore.collection('messages');
+  const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState({
     message: '',
   });
   const [emoji_picker, setEmojiPicker] = useState(false);
   const messageEl = useRef(null);
+  const [details, setDetails] = useState([]);
+
+  const getDetails = async () => {
+    try {
+      const snapshot = await conversationsRef.doc(conversation_id);
+      const conversation = await snapshot.get();
+      const data = conversation.data();
+      const profiles = await profilesRef.where(firestore.FieldPath.documentId(), 'in', data.participants).get();
+      setDetails(profiles.docs.map(profile => ({
+        id: profile.id,
+        ...profile.data(),
+      })));
+    } catch(error) {
+      console.log(error);
+    }
+  };
 
   const getMessages = async () => {
     try {
@@ -73,6 +92,7 @@ function Conversation({ conversation_id }) {
   };
 
   useEffect(() => {
+    getDetails();
     getMessages();
   }, [conversation_id]);
 
@@ -104,21 +124,25 @@ function Conversation({ conversation_id }) {
 
   return (
     <div style={{ }}>
-      <div style={{ height: 'calc((100vh - ((var(--chakra-space-4) * 2) + 80px)) - 45px)', overflowY: 'scroll' }} ref={messageEl}>
+      <Flex align="center" h="60px" bg="white" p="3" style={{ }}>
+        <Heading size="md">{formatter.format(details.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}</Heading>
+      </Flex>
+      <Box p="4" style={{ height: 'calc(((100vh - (80px)) - 60px) - 80px)', overflowY: 'scroll' }} ref={messageEl}>
         {messagesFilter(messages || []).map(message => (
-          <Flex>
-            {message.user_uid === auth.uid ? <Spacer /> : null}
+          <Flex key={message.uid}>
+            {message.user_uid === auth.uid ? <Spacer /> : <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />}
             <Box maxW='sm' borderWidth="1px" borderRadius="lg" overflow='hidden' mb="3" bg="white">
               <Box p="3">
                 {message.message}
               </Box>
             </Box>
+            {message.user_uid === auth.uid ? <Avatar size="sm" ml="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' /> : null}
           </Flex>
         ))}
-      </div>
-      <div style={{ height: 45 }}>
+      </Box>
+      <Box p="4" style={{ height: 80 }}>
         {emoji_picker ? (
-        <div style={{ position: 'absolute', bottom: 'calc(var(--chakra-space-4) + 50px)', zIndex: 999 }}>
+        <div style={{ right: 0, position: 'absolute', bottom: 'calc(var(--chakra-space-4) + 50px)', zIndex: 999 }}>
           <Picker 
             onEmojiClick={onEmojiClick} 
           />
@@ -126,13 +150,6 @@ function Conversation({ conversation_id }) {
         ) : null}
         <form onSubmit={onSubmit}>
           <InputGroup>
-            <InputLeftElement
-              children={
-                <div onClick={() => setEmojiPicker(prevState => !prevState)}>
-                  😍
-                </div>
-              }
-            />
             <Input 
               bg="white"
               name="message"
@@ -142,14 +159,19 @@ function Conversation({ conversation_id }) {
               variant="outline" 
               placeholder="Message here..." 
             />
-            <InputRightElement>
-              <Button h="45" size='sm' type="submit">
-                <FiSend color="green.500" size="45" />
+            <InputRightElement w="100px">
+              <Box w="40px" p="1">
+                <div onClick={() => setEmojiPicker(prevState => !prevState)}>
+                  😍
+                </div>
+              </Box>
+              <Button w="45px" size='sm' type="submit">
+                <FiSend color="green.500" size="30" />
               </Button>
             </InputRightElement>
           </InputGroup>
         </form>
-      </div>
+      </Box>
     </div>
   )
 }
