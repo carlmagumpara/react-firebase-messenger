@@ -8,6 +8,7 @@ import Guest from './pages/components/Guest';
 import Login from './pages/login';
 import Register from './pages/register';
 import Conversations from './pages/conversations';
+import Profile from './pages/profile';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <Route path=":conversation_id" element={<Auth><Conversations /></Auth>} />
           <Route path="" element={<Auth><Conversations /></Auth>} />
         </Route>
+        <Route path="profile" element={<Auth><Profile /></Auth>} />
         <Route path="/" element={<Auth><Guest></Guest></Auth>}/>
       </Routes>
     </div>

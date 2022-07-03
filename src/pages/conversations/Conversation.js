@@ -20,6 +20,7 @@ function Conversation({ conversation_id }) {
   const [emoji_picker, setEmojiPicker] = useState(false);
   const messageEl = useRef(null);
   const [details, setDetails] = useState([]);
+  const [cursor_position, setCursorPosition] = useState(0);
 
   const getDetails = async () => {
     try {
@@ -91,6 +92,12 @@ function Conversation({ conversation_id }) {
     }))
   };
 
+  const checkCursorPosition = event => {
+    console.log('Caret at: ', event.target.selectionStart);
+
+    setCursorPosition(event.target.selectionStart);
+  };
+
   useEffect(() => {
     getDetails();
     getMessages();
@@ -117,10 +124,11 @@ function Conversation({ conversation_id }) {
   const onEmojiClick = (event, emoji) => {
     setMessage(prevState => ({
       ...prevState,
-      message: prevState.message + emoji.emoji
-    }))
-    setEmojiPicker(prevState => !prevState);
-  }
+      message: prevState.message.slice(0, cursor_position) + emoji.emoji + prevState.message.slice(cursor_position),
+    }));
+
+    setCursorPosition(prevState => prevState + emoji.emoji.length);
+  };
 
   return (
     <div style={{ }}>
@@ -156,6 +164,8 @@ function Conversation({ conversation_id }) {
               style={{ height: 45 }} 
               value={message.message} 
               onChange={onChange} 
+              onKeyUp={checkCursorPosition}
+              onClick={checkCursorPosition}
               variant="outline" 
               placeholder="Message here..." 
             />

@@ -25,7 +25,7 @@ import {
   Heading
 } from '@chakra-ui/react';
 import {
-  FiHome,
+  FiMessageSquare,
   FiTrendingUp,
   FiCompass,
   FiStar,
@@ -42,21 +42,21 @@ import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
 const LinkItems = [
-  { name: 'Home', icon: FiHome },
-  { name: 'Trending', icon: FiTrendingUp },
-  { name: 'Explore', icon: FiCompass },
-  { name: 'Favourites', icon: FiStar },
+  { name: 'Conversations', icon: FiMessageSquare },
+  { name: 'Profile', icon: FiUser },
   { name: 'Settings', icon: FiSettings },
 ];
 
 export default function SidebarWithHeader({
   children,
+  sideBarMenu
 }) {
   const { isOpen, onOpen, onClose } = useDisclosure();
   return (
     <Box minH="100vh" bg={useColorModeValue('gray.100', 'gray.900')}>
       <SidebarContent
         onClose={() => onClose}
+        sideBarMenu={sideBarMenu}
         display={{ base: 'none', md: 'block' }}
       />
       <Drawer
@@ -80,7 +80,7 @@ export default function SidebarWithHeader({
   );
 }
 
-const SidebarContent = ({ onClose, ...rest }) => {
+const SidebarContent = ({ onClose, sideBarMenu, ...rest }) => {
   const navigate = useNavigate();
   const firebase = useFirebase();
   const firestore = useFirestore();
@@ -94,6 +94,8 @@ const SidebarContent = ({ onClose, ...rest }) => {
   const conversationsRef = firestore.collection('conversations');
   const messagesRef = firestore.collection('messages');
   const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
+
+  console.log(sideBarMenu);
 
   useEffect(() => {
     getConversations();
@@ -170,16 +172,15 @@ const SidebarContent = ({ onClose, ...rest }) => {
         </Text>
         <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
       </Flex>
-      <Box p="3">
-        <Input 
-          value={search} 
-          onChange={event => setSearch(event.target.value)} 
-          placeholder="Search User..."
-        />
-      </Box>
       {(search && users.length) ? (
         <>
-          <Heading size="md">Users</Heading>
+          <Box p="3">
+            <Input 
+              value={search} 
+              onChange={event => setSearch(event.target.value)} 
+              placeholder="Search User..."
+            />
+          </Box>
           {users.map(user => (
             <NavItem key={user.id} icon={() => <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />} onClick={createOrViewConversation(user)}>
               {user.first_name} {user.last_name}
@@ -188,20 +189,27 @@ const SidebarContent = ({ onClose, ...rest }) => {
         </>
       ) : (
         <>
-          {conversations.map(conversation => (
-            <NavItem 
-              key={conversation.id} 
-              icon={() => <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />} 
-              onClick={() => navigate(`/conversations/${conversation.id}`)}
-            >
-              {formatter.format(conversation.participants.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}
-            </NavItem>
-          ))}
-{/*          {LinkItems.map((link) => (
-            <NavItem key={link.name} icon={link.icon}>
-              {link.name}
-            </NavItem>
-          ))}*/}
+          {sideBarMenu === 'conversations' ? (
+            <>
+              {conversations.map(conversation => (
+                <NavItem 
+                  key={conversation.id} 
+                  icon={() => <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />} 
+                  onClick={() => navigate(`/conversations/${conversation.id}`)}
+                >
+                  {formatter.format(conversation.participants.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}
+                </NavItem>
+              ))}
+            </>
+          ) : (
+            <>
+              {LinkItems.map((link) => (
+                <NavItem key={link.name} icon={link.icon}>
+                  {link.name}
+                </NavItem>
+              ))}
+            </>
+          )}
         </>
       )}
     </Box>
@@ -222,8 +230,8 @@ const NavItem = ({ icon, children, ...rest }) => {
     >
       <Flex
         align="center"
-        p="4"
-        mx="4"
+        p="2"
+        mx="2"
         borderRadius="lg"
         role="group"
         cursor="pointer"
@@ -317,7 +325,7 @@ const MobileNav = ({ onOpen, ...rest }) => {
             <MenuList
               bg={useColorModeValue('white', 'gray.900')}
               borderColor={useColorModeValue('gray.200', 'gray.700')}>
-              <MenuItem>Profile</MenuItem>
+              <MenuItem onClick={() => navigate('/profile')}>Profile</MenuItem>
               <MenuItem>Settings</MenuItem>
               <MenuDivider />
               <MenuItem onClick={() => firebase.logout()}>Sign out</MenuItem>
