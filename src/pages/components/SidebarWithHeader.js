@@ -41,12 +41,6 @@ import { useFirebase, useFirestore } from 'react-redux-firebase';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 
-const LinkItems = [
-  { name: 'Conversations', icon: FiMessageSquare },
-  { name: 'Profile', icon: FiUser },
-  { name: 'Settings', icon: FiSettings },
-];
-
 export default function SidebarWithHeader({
   children,
   sideBarMenu
@@ -95,7 +89,11 @@ const SidebarContent = ({ onClose, sideBarMenu, ...rest }) => {
   const messagesRef = firestore.collection('messages');
   const formatter = new Intl.ListFormat('en', { style: 'long', type: 'conjunction' });
 
-  console.log(sideBarMenu);
+  const LinkItems = [
+    { name: 'Conversations', icon: FiMessageSquare, onClick: () => navigate('/conversations') },
+    { name: 'Profile', icon: FiUser, onClick: () => navigate('/profile') },
+    { name: 'Settings', icon: FiSettings, onClick: () => navigate('/settings') },
+  ];
 
   useEffect(() => {
     getConversations();
@@ -172,7 +170,6 @@ const SidebarContent = ({ onClose, sideBarMenu, ...rest }) => {
         </Text>
         <CloseButton display={{ base: 'flex', md: 'none' }} onClick={onClose} />
       </Flex>
-      {(search && users.length) ? (
         <>
           <Box p="3">
             <Input 
@@ -187,7 +184,6 @@ const SidebarContent = ({ onClose, sideBarMenu, ...rest }) => {
             </NavItem>
           ))}
         </>
-      ) : (
         <>
           {sideBarMenu === 'conversations' ? (
             <>
@@ -204,21 +200,21 @@ const SidebarContent = ({ onClose, sideBarMenu, ...rest }) => {
           ) : (
             <>
               {LinkItems.map((link) => (
-                <NavItem key={link.name} icon={link.icon}>
+                <NavItem key={link.name} onClick={link.onClick} icon={link.icon}>
                   {link.name}
                 </NavItem>
               ))}
             </>
           )}
         </>
-      )}
     </Box>
   );
 };
 
-const NavItem = ({ icon, children, ...rest }) => {
+const NavItem = ({ icon, children, onClick, ...rest }) => {
   return (
-    <Link href="#" 
+    <Box
+      onClick={onClick}
       style={{ 
         whiteSpace: "normal",
         wordWrap: "break-word",
@@ -252,7 +248,7 @@ const NavItem = ({ icon, children, ...rest }) => {
         )}
         {children}
       </Flex>
-    </Link>
+    </Box>
   );
 };
 
@@ -326,7 +322,7 @@ const MobileNav = ({ onOpen, ...rest }) => {
               bg={useColorModeValue('white', 'gray.900')}
               borderColor={useColorModeValue('gray.200', 'gray.700')}>
               <MenuItem onClick={() => navigate('/profile')}>Profile</MenuItem>
-              <MenuItem>Settings</MenuItem>
+              <MenuItem onClick={() => navigate('/settings')}>Settings</MenuItem>
               <MenuDivider />
               <MenuItem onClick={() => firebase.logout()}>Sign out</MenuItem>
             </MenuList>

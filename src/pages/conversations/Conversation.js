@@ -21,6 +21,7 @@ function Conversation({ conversation_id }) {
   const messageEl = useRef(null);
   const [details, setDetails] = useState([]);
   const [cursor_position, setCursorPosition] = useState(0);
+  const [loading, setLoading] = useState(false);
 
   const getDetails = async () => {
     try {
@@ -38,10 +39,12 @@ function Conversation({ conversation_id }) {
   };
 
   const getMessages = async () => {
+    setLoading(true);
     try {
       const snapshot = await messagesRef.doc(conversation_id).collection('messages').orderBy('created_at').get();
 
       setMessages(snapshot.docs.map(message => ({ ...message.data(), id: message.id })));
+      setLoading(false);
     } catch(error) {
       console.log(error);
     }
@@ -71,6 +74,8 @@ function Conversation({ conversation_id }) {
     if (!message.message) {
       return false;
     }
+
+    setEmojiPicker(false);
 
     const response = await messagesRef.doc(conversation_id).collection('messages').add({
       ...message,
@@ -133,20 +138,34 @@ function Conversation({ conversation_id }) {
   return (
     <div style={{ }}>
       <Flex align="center" h="60px" bg="white" p="3" style={{ }}>
-        <Heading size="md">{formatter.format(details.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}</Heading>
+        <Heading size="md">
+          {loading ? (
+            <span>Loading...</span>
+          ) : (
+          <>
+            {formatter.format(details.filter(profile => profile.id !== auth.uid).map(profile => (`${profile.first_name} ${profile.last_name}`)))}
+          </>
+          )}
+        </Heading>
       </Flex>
       <Box p="4" style={{ height: 'calc(((100vh - (80px)) - 60px) - 80px)', overflowY: 'scroll' }} ref={messageEl}>
-        {messagesFilter(messages || []).map(message => (
-          <Flex key={message.uid}>
-            {message.user_uid === auth.uid ? <Spacer /> : <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />}
-            <Box maxW='sm' borderWidth="1px" borderRadius="lg" overflow='hidden' mb="3" bg="white">
-              <Box p="3">
-                {message.message}
+        {loading ? (
+          <div>Loading...</div>
+        ) : (
+        <>
+          {messagesFilter(messages || []).map(message => (
+            <Flex key={message.uid}>
+              {message.user_uid === auth.uid ? <Spacer /> : <Avatar size="sm" mr="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' />}
+              <Box maxW='sm' borderWidth="1px" borderRadius="lg" overflow='hidden' mb="3" bg="white">
+                <Box p="3">
+                  {message.message}
+                </Box>
               </Box>
-            </Box>
-            {message.user_uid === auth.uid ? <Avatar size="sm" ml="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' /> : null}
-          </Flex>
-        ))}
+              {message.user_uid === auth.uid ? <Avatar size="sm" ml="3" name='Dan Abrahmov' src='https://bit.ly/dan-abramov' /> : null}
+            </Flex>
+          ))}
+        </>
+        )}
       </Box>
       <Box p="4" style={{ height: 80 }}>
         {emoji_picker ? (
